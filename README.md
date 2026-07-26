@@ -1,6 +1,6 @@
 # ChangeGuard
 
-**Consensus compatibility reviews for API changes on GenLayer.**
+** reviews for API changes on GenLayer.**
 
 ChangeGuard helps product and engineering teams answer a high-impact question before shipping: **will this API change break existing clients?** A maintainer submits the current API contract and a proposed change. A GenLayer Intelligent Contract asks independent validators to review the compatibility risk, then stores the finalized review on-chain.
 

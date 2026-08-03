@@ -33,6 +33,18 @@ function shortAddress(address?: string | null) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
+function getWalletProvider() {
+  return (window as Window & { ethereum?: unknown }).ethereum;
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) {
+    if (/user rejected|denied/i.test(error.message)) return "The wallet request was cancelled.";
+    return error.message.split("\n")[0];
+  }
+  return "Transaction failed.";
+}
+
 function parseReview(entry: unknown): Review | null {
   if (typeof entry !== "string") return null;
   try {
@@ -72,10 +84,10 @@ export default function App() {
   } as any), [account]);
 
   async function connectWallet() {
-    const ethereum = (window as any).ethereum;
+    const ethereum = getWalletProvider() as { request: (args: { method: string; params?: unknown[] }) => Promise<any> } | undefined;
     if (!ethereum) {
       setStatus("MetaMask is not installed.");
-      return;
+      return "";
     }
     const accounts = await ethereum.request({ method: "eth_requestAccounts" });
     const selected = accounts?.[0] || "";
@@ -99,6 +111,7 @@ export default function App() {
     }
     setAccount(selected);
     setStatus(`Wallet connected: ${shortAddress(selected)}`);
+    return selected;
   }
 
   async function loadReviews() {
@@ -121,15 +134,19 @@ export default function App() {
       setStatus("Deploy the ChangeGuard contract first, then add VITE_CONTRACT_ADDRESS.");
       return;
     }
-    if (!account) {
-      await connectWallet();
-      return;
-    }
+    const selectedAccount = account || await connectWallet();
+    if (!selectedAccount) return;
     setBusy(true);
     setLastTx("");
     setStatus("Submitting compatibility review to validators…");
     try {
-      const hash = await client.writeContract({
+      const writeClient = createClient({
+        chain: testnetBradbury,
+        endpoint: RPC_URL,
+        account: selectedAccount as `0x${string}`,
+        provider: getWalletProvider(),
+      } as any);
+      const hash = await writeClient.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: "review_change",
         args: [apiArea, currentContract, proposedChange],
@@ -141,8 +158,8 @@ export default function App() {
       await client.waitForTransactionReceipt({ hash, status: "FINALIZED" } as any);
       setStatus("Finalized. Compatibility review stored on-chain.");
       await loadReviews();
-    } catch (error: any) {
-      setStatus(error?.message || "Transaction failed.");
+    } catch (error) {
+      setStatus(errorMessage(error));
     } finally {
       setBusy(false);
     }

@@ -17,7 +17,8 @@ type Review = {
   reason: string;
 };
 
-const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
+const DEPLOYED_CONTRACT_ADDRESS = "0x76bBbfEd4eFEC26BC788B6B22fEb1fb700b74105";
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || DEPLOYED_CONTRACT_ADDRESS;
 const RPC_URL = import.meta.env.VITE_GENLAYER_RPC_URL || "https://rpc-bradbury.genlayer.com";
 const EXPLORER_URL = "https://explorer-bradbury.genlayer.com";
 
